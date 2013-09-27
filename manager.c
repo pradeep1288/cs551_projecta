@@ -1,5 +1,5 @@
 #include "manager.h"
-
+#define MAX_CON 2000
 typedef struct config_file_info {
     int stage_no;
     int num_of_nodes;
@@ -71,8 +71,60 @@ Conf* read_config(char* path)
 
 int main(int argc, char const *argv[])
 {
+    int sockfd, new_fd;  // listen on sock_fd, new connection on new_fd
     Conf *conf;
     conf = read_config("foo.txt");
+    struct addrinfo hints, *servinfo, *p;
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+    int rv;
+    int yes = 1;
+    int server_tcp_port = getRandomPort();
+    char servers_ip[INET6_ADDRSTRLEN];
+
+    if ((rv = getaddrinfo("localhost", server_tcp_port, &hints, &servinfo)) != 0) {
+        fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
+        return 1;
+    }
+
+    // loop through all the results and bind to the first we can
+    for(p = servinfo; p != NULL; p = p->ai_next) {
+        if ((sockfd = socket(p->ai_family, p->ai_socktype,
+                p->ai_protocol)) == -1) {
+            perror("server: socket");
+            continue;
+        }
+
+        if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes,
+                sizeof(int)) == -1) {
+            perror("setsockopt");
+            exit(1);
+        }
+
+        if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
+            close(sockfd);
+            perror("server: bind");
+            continue;
+        }
+        //store the servers ip in servers_ip
+        inet_ntop(p->ai_family, get_in_addr(p->ai_addr),
+            servers_ip, sizeof servers_ip);
+        break;
+    }
+
+    if (p == NULL)  {
+        fprintf(stderr, "server: failed to bind\n");
+        return 2;
+    }
+
+    freeaddrinfo(servinfo); // all done with this structure
+
+    if (listen(sockfd, MAX_CON) == -1) {
+        perror("listen");
+        exit(1);
+    }
+
     printf("%d\n",getRandomPort());
     return 0;
 }        
