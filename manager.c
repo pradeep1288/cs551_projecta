@@ -16,20 +16,7 @@ void *get_in_addr(struct sockaddr *sa)
     return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
-uint16_t getRandomPort()
-{
-    struct   sockaddr_in sin;
-    int addrlen, sd_server;
-    addrlen=sizeof(sin);
-    memset(&sin, 0, sizeof(sin));
-    sin.sin_family = AF_INET;
-    sin.sin_addr.s_addr=inet_addr("127.0.0.1");
-    sin.sin_port=htons(0);
-    sd_server = socket(PF_INET, SOCK_STREAM, 0);
-    bind(sd_server, (struct sockaddr *) &sin, sizeof(sin));
-    getsockname(sd_server,(struct sockaddr*)&sin,&addrlen);
-    return ntohs(sin.sin_port); 
-}
+
 
 Conf* read_config(char* path)
 {
@@ -69,19 +56,84 @@ Conf* read_config(char* path)
     return conf;
 }
 
+int doprocessing (int server_tcp_port)
+{
+    int sa_len;
+    struct sockaddr_in sa;
+    int sockfd; 
+    struct addrinfo hints, *servinfo, *p;
+    int rv;
+    char s[INET6_ADDRSTRLEN];
+    char buf[1024];
+    char port_no[1024];
+    sprintf(port_no,"%d", server_tcp_port);
+
+    sprintf(buf,"Hello World");
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+    if ((rv = getaddrinfo("localhost", port_no, &hints, &servinfo)) != 0) {
+        fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
+        return 1;
+    }
+    printf("Came after getaddrinfo in client\n");
+    // loop through all the results and connect to the first we can
+    for(p = servinfo; p != NULL; p = p->ai_next) {
+        if ((sockfd = socket(p->ai_family, p->ai_socktype,
+                p->ai_protocol)) == -1) {
+            perror("client: socket");
+            continue;
+        }
+
+        if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
+            close(sockfd);
+            perror("client: connect");
+            continue;
+        }
+
+        break;
+    }
+
+    if (p == NULL) {
+        fprintf(stderr, "client: failed to connect\n");
+        return 2;
+    }
+
+    inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr),
+            s, sizeof s);
+    //get the dynamic tcp port number
+    if (getsockname(sockfd, (struct sockaddr*)&sa, (socklen_t*)&sa_len) == -1) {
+      perror("getsockname() failed");
+      return -1;
+    }
+    freeaddrinfo(servinfo); // all done with this structure
+    send(sockfd, buf, sizeof(buf), 0);
+    printf("Just after send\n");
+    close(sockfd);
+}
+
 int main(int argc, char const *argv[])
 {
     int sockfd, new_fd;  // listen on sock_fd, new connection on new_fd
     Conf *conf;
+    int addrlen;
     conf = read_config("foo.txt");
     struct addrinfo hints, *servinfo, *p;
+    struct sockaddr_in serv_sin;
+    int rv;
+    int yes = 1;
+    char server_tcp_port[1024];
+    sprintf(server_tcp_port,"%i",0);
+    char servers_ip[INET6_ADDRSTRLEN];
+    pid_t pid;
+    struct sockaddr_storage their_addr; // connector's address information
+    socklen_t sin_size;
+    int port;
+    char buf[1024];
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
-    int rv;
-    int yes = 1;
-    int server_tcp_port = getRandomPort();
-    char servers_ip[INET6_ADDRSTRLEN];
+    hints.ai_flags = INADDR_ANY;
 
     if ((rv = getaddrinfo("localhost", server_tcp_port, &hints, &servinfo)) != 0) {
         fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
@@ -117,14 +169,44 @@ int main(int argc, char const *argv[])
         fprintf(stderr, "server: failed to bind\n");
         return 2;
     }
+    addrlen = sizeof(serv_sin);
+    getsockname(sockfd,(struct sockaddr*)&serv_sin,&addrlen);
+    port=ntohs(serv_sin.sin_port);
 
     freeaddrinfo(servinfo); // all done with this structure
+
+    pid = fork();
+    if (pid < 0)
+    {
+        perror("ERROR on fork");
+        exit(1);
+    }
+    if (pid == 0)  
+    {
+        /* This is the client process */
+        //close(sockfd);
+        printf("%d\n",port );
+        doprocessing(port);
+        exit(0);
+    }
 
     if (listen(sockfd, MAX_CON) == -1) {
         perror("listen");
         exit(1);
     }
 
-    printf("%d\n",getRandomPort());
+    while (1)
+    {
+        new_fd = accept(sockfd, (struct sockaddr *)&their_addr, &sin_size);
+        if (new_fd < 0)
+        {
+            perror("ERROR on accept");
+            exit(1);
+        }
+        printf("before receive\n");
+        recv(new_fd, buf, sizeof(buf), 0);
+        printf("Received from client: %s\n",buf);
+    }
+   // printf("%d\n",getRandomPort());
     return 0;
 }        

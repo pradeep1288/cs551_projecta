@@ -10,6 +10,9 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <sys/wait.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
 #include <signal.h>
 #include <time.h>
 
+#define SHM_SIZE 1024  /* make it a 1K shared memory segment */
