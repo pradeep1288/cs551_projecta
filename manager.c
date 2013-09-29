@@ -56,27 +56,24 @@ Conf* read_config(char* path)
     return conf;
 }
 
-int doprocessing (int server_tcp_port)
+int client (int server_tcp_port, int client_num)
 {
-    int sa_len;
+    int sa_len, sockfd, rv, client_port, addrlen;
     struct sockaddr_in sa;
-    int sockfd; 
     struct addrinfo hints, *servinfo, *p;
-    int rv;
     char s[INET6_ADDRSTRLEN];
-    char buf[1024];
-    char port_no[1024];
+    char buf[1024], port_no[1024], data_to_send[1024];
     sprintf(port_no,"%d", server_tcp_port);
-
     sprintf(buf,"Hello World");
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
+    FILE *fp;
+    fp = fopen(LOG_FILE_NAME, "a+");
     if ((rv = getaddrinfo("localhost", port_no, &hints, &servinfo)) != 0) {
         fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
         return 1;
     }
-    printf("Came after getaddrinfo in client\n");
     // loop through all the results and connect to the first we can
     for(p = servinfo; p != NULL; p = p->ai_next) {
         if ((sockfd = socket(p->ai_family, p->ai_socktype,
@@ -102,39 +99,43 @@ int doprocessing (int server_tcp_port)
     inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr),
             s, sizeof s);
     //get the dynamic tcp port number
-    if (getsockname(sockfd, (struct sockaddr*)&sa, (socklen_t*)&sa_len) == -1) {
-      perror("getsockname() failed");
-      return -1;
-    }
+    addrlen = sizeof(sa);
+    getsockname(sockfd,(struct sockaddr*)&sa,&addrlen);
+    client_port=ntohs(sa.sin_port);
+    printf("Client %d: %d and %d\n",client_num, client_port, getpid());
+    client_port=ntohs(sa.sin_port);
+    fprintf(fp, "Client %d: %d\n",client_num, client_port);
     freeaddrinfo(servinfo); // all done with this structure
-    send(sockfd, buf, sizeof(buf), 0);
-    printf("Just after send\n");
+    recv(sockfd, buf, sizeof(buf), 0);
+    printf("receiving noonce %s from manager now...\n", buf);
+    sprintf(data_to_send,"client %d says: %s %d",client_num, buf, getpid());
+    send(sockfd, data_to_send, sizeof(data_to_send), 0);
+    printf("sent %s to manager\n", data_to_send);
     close(sockfd);
+    fclose(fp);
 }
 
 int main(int argc, char const *argv[])
 {
-    int sockfd, new_fd;  // listen on sock_fd, new connection on new_fd
+    int sockfd, new_fd, rv, yes = 1, port, addrlen, i=0;  // listen on sock_fd, new connection on new_fd
     Conf *conf;
-    int addrlen;
     conf = read_config("foo.txt");
+    FILE *fp;
+    fp = fopen(LOG_FILE_NAME, "a+");    
     struct addrinfo hints, *servinfo, *p;
     struct sockaddr_in serv_sin;
-    int rv;
-    int yes = 1;
-    char server_tcp_port[1024];
+    char server_tcp_port[1024], data_to_send[1024];
     sprintf(server_tcp_port,"%i",0);
     char servers_ip[INET6_ADDRSTRLEN];
     pid_t pid;
     struct sockaddr_storage their_addr; // connector's address information
     socklen_t sin_size;
-    int port;
     char buf[1024];
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = INADDR_ANY;
-
+    sprintf(data_to_send,"%ld", conf->noonce);
     if ((rv = getaddrinfo("localhost", server_tcp_port, &hints, &servinfo)) != 0) {
         fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
         return 1;
@@ -173,21 +174,29 @@ int main(int argc, char const *argv[])
     getsockname(sockfd,(struct sockaddr*)&serv_sin,&addrlen);
     port=ntohs(serv_sin.sin_port);
 
+    //write to log file about the port
+    printf("Manager port: %d\n",port);
+    fprintf(fp, "manager port:%d\n",port);
+    fclose(fp);
     freeaddrinfo(servinfo); // all done with this structure
 
-    pid = fork();
-    if (pid < 0)
+    printf("Forking clients now....\n");
+    for (i=0;i<2;i++)
     {
-        perror("ERROR on fork");
-        exit(1);
-    }
-    if (pid == 0)  
-    {
-        /* This is the client process */
-        //close(sockfd);
-        printf("%d\n",port );
-        doprocessing(port);
-        exit(0);
+        pid = fork();
+        if (pid < 0)
+        {
+            perror("ERROR on fork");
+            exit(1);
+        }
+        if (pid == 0)  
+        {
+            /* This is the client process */
+            close(sockfd);
+            printf("%d\n",port );
+            client(port,i+1);
+            exit(0);
+        }
     }
 
     if (listen(sockfd, MAX_CON) == -1) {
@@ -203,10 +212,13 @@ int main(int argc, char const *argv[])
             perror("ERROR on accept");
             exit(1);
         }
-        printf("before receive\n");
+        send(new_fd,data_to_send, sizeof(data_to_send), 0);
         recv(new_fd, buf, sizeof(buf), 0);
+        fopen(LOG_FILE_NAME, "a+");
+        fprintf(fp, "%s\n",buf);
+        fclose(fp);
         printf("Received from client: %s\n",buf);
     }
-   // printf("%d\n",getRandomPort());
+    fclose(fp);
     return 0;
 }        
