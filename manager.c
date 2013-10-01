@@ -18,7 +18,7 @@ void *get_in_addr(struct sockaddr *sa)
 
 
 
-Conf* read_config(char* path)
+Conf* read_config(const char* path)
 {
     Conf *conf = (Conf* )malloc(sizeof(Conf));
     FILE *fp;
@@ -58,13 +58,12 @@ Conf* read_config(char* path)
 
 int client (int server_tcp_port, int client_num)
 {
-    int sa_len, sockfd, rv, client_port, addrlen;
+    int sockfd, rv, client_port, addrlen;
     struct sockaddr_in sa;
     struct addrinfo hints, *servinfo, *p;
     char s[INET6_ADDRSTRLEN];
     char buf[1024], port_no[1024], data_to_send[1024];
     sprintf(port_no,"%d", server_tcp_port);
-    sprintf(buf,"Hello World");
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
@@ -119,7 +118,7 @@ int main(int argc, char const *argv[])
 {
     int sockfd, new_fd, rv, yes = 1, port, addrlen, i=0;  // listen on sock_fd, new connection on new_fd
     Conf *conf;
-    conf = read_config("foo.txt");
+    conf = read_config(argv[1]);
     FILE *fp;
     fp = fopen(LOG_FILE_NAME, "a+");    
     struct addrinfo hints, *servinfo, *p;
@@ -181,7 +180,7 @@ int main(int argc, char const *argv[])
     freeaddrinfo(servinfo); // all done with this structure
 
     printf("Forking clients now....\n");
-    for (i=0;i<2;i++)
+    for (i=0;i<conf->num_of_nodes;i++)
     {
         pid = fork();
         if (pid < 0)
@@ -204,7 +203,7 @@ int main(int argc, char const *argv[])
         exit(1);
     }
 
-    while (1)
+    while(1)
     {
         new_fd = accept(sockfd, (struct sockaddr *)&their_addr, &sin_size);
         if (new_fd < 0)
