@@ -1,4 +1,4 @@
 #This is a comment line, should be ignored
 stage 1
-num_nodes 256
+num_nodes 10
 nonce 23479435

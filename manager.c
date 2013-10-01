@@ -58,8 +58,7 @@ Conf* read_config(const char* path)
 
 int client (int server_tcp_port, int client_num)
 {
-    int sockfd, rv, client_port, addrlen;
-    struct sockaddr_in sa;
+    int sockfd, rv;
     struct addrinfo hints, *servinfo, *p;
     char s[INET6_ADDRSTRLEN];
     char buf[1024], port_no[1024], data_to_send[1024];
@@ -67,8 +66,6 @@ int client (int server_tcp_port, int client_num)
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
-    FILE *fp;
-    fp = fopen(LOG_FILE_NAME, "a+");
     if ((rv = getaddrinfo("localhost", port_no, &hints, &servinfo)) != 0) {
         fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
         return 1;
@@ -98,36 +95,30 @@ int client (int server_tcp_port, int client_num)
     inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr),
             s, sizeof s);
     //get the dynamic tcp port number
-    addrlen = sizeof(sa);
-    getsockname(sockfd,(struct sockaddr*)&sa,&addrlen);
-    client_port=ntohs(sa.sin_port);
-    printf("Client %d: %d and %d\n",client_num, client_port, getpid());
-    client_port=ntohs(sa.sin_port);
-    fprintf(fp, "Client %d: %d\n",client_num, client_port);
     freeaddrinfo(servinfo); // all done with this structure
     recv(sockfd, buf, sizeof(buf), 0);
     printf("receiving noonce %s from manager now...\n", buf);
-    sprintf(data_to_send,"client %d says: %s %d",client_num, buf, getpid());
+    sprintf(data_to_send,"%s %d",buf, getpid());
     send(sockfd, data_to_send, sizeof(data_to_send), 0);
     printf("sent %s to manager\n", data_to_send);
     close(sockfd);
-    fclose(fp);
+    return 0;
 }
 
 int main(int argc, char const *argv[])
 {
-    int sockfd, new_fd, rv, yes = 1, port, addrlen, i=0;  // listen on sock_fd, new connection on new_fd
+    int sockfd, new_fd, rv, yes = 1, port, addrlen, i=0,j=0;  // listen on sock_fd, new connection on new_fd
     Conf *conf;
     conf = read_config(argv[1]);
     FILE *fp;
     fp = fopen(LOG_FILE_NAME, "a+");    
     struct addrinfo hints, *servinfo, *p;
     struct sockaddr_in serv_sin;
-    char server_tcp_port[1024], data_to_send[1024];
+    char server_tcp_port[1024], data_to_send[1024],data_to_write[1024];
     sprintf(server_tcp_port,"%i",0);
     char servers_ip[INET6_ADDRSTRLEN];
     pid_t pid;
-    struct sockaddr_storage their_addr; // connector's address information
+    struct sockaddr_in their_addr; // connector's address information
     socklen_t sin_size;
     char buf[1024];
     memset(&hints, 0, sizeof hints);
@@ -203,9 +194,10 @@ int main(int argc, char const *argv[])
         exit(1);
     }
 
-    while(1)
+    for(j=0;j<conf->num_of_nodes;j++)
     {
         new_fd = accept(sockfd, (struct sockaddr *)&their_addr, &sin_size);
+        printf("Client port:%d\n",ntohs(their_addr.sin_port));
         if (new_fd < 0)
         {
             perror("ERROR on accept");
@@ -214,10 +206,11 @@ int main(int argc, char const *argv[])
         send(new_fd,data_to_send, sizeof(data_to_send), 0);
         recv(new_fd, buf, sizeof(buf), 0);
         fopen(LOG_FILE_NAME, "a+");
-        fprintf(fp, "%s\n",buf);
+        sprintf(data_to_write,"Client %d says: %s",j+1, buf);
+        fprintf(fp, "Client %d: %d\n",j+1, ntohs(their_addr.sin_port));
+        fprintf(fp, "%s\n",data_to_write);
         fclose(fp);
         printf("Received from client: %s\n",buf);
     }
-    fclose(fp);
     return 0;
 }        
