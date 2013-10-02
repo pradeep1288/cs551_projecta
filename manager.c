@@ -72,6 +72,7 @@ int main(int argc, char const *argv[])
         return 1;
     }
 
+    //line 76 - 96 has been adapted from http://beej.us/guide/bgnet/examples/server.c
     // loop through all the results and bind to the first we can
     for(p = servinfo; p != NULL; p = p->ai_next) {
         if ((sockfd = socket(p->ai_family, p->ai_socktype,
