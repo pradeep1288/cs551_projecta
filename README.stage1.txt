@@ -6,6 +6,7 @@ b. Complete:
 Yes, the stage is complete.
 
 c. Portable
-No the code will not work if the manager and client were on different machines with different architectures. 
-No there is no support added.
-For example the size of int might be 32 bit on a 32 bit architecture and it could be 64 bit on a machine running 64 bit architecture. These inconsistencies cause the program to behave differently on different machines. Hence it becomes difficult to support.
+Yes it will work, if the packet format is independent of the CPU
+and the program converts between the network format and the CPU format.
+For example it you write an short integer in x86 its little endian
+in network format it is typically big endian so the program needs to use the htons() method to convert between the two and ntohs() while reading the packet.
