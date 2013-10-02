@@ -11,10 +11,16 @@ a. Reused Code
 I have reference the Beej guide for socket programming at http://beej.us/guide/bgnet/output/html/multipage/index.html. Some function names share the similarity as described on the website.
 
 b. Complete: 
-Yes, the stage is complete. The maximum number of nodes this supports is 1004
+Yes, the stage is complete. The maximum number of nodes this supports is 1004.
 
 c. Portable
 Yes it will work, if the packet format is independent of the CPU
 and the program converts between the network format and the CPU format.
 For example it you write an short integer in x86 its little endian
 in network format it is typically big endian so the program needs to use the htons() method to convert between the two and ntohs() while reading the packet.
+
+How to Run ?
+
+make clean 
+make 
+./projecta <path_to_config_file>
