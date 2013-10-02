@@ -15,5 +15,3 @@
 #include <signal.h>
 #include <time.h>
 
-#define SHM_SIZE 1024  /* make it a 1K shared memory segment */
-#define LOG_FILE_NAME "stage1.manager.out"

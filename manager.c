@@ -111,7 +111,9 @@ int main(int argc, char const *argv[])
     Conf *conf;
     conf = read_config(argv[1]);
     FILE *fp;
-    fp = fopen(LOG_FILE_NAME, "a+");    
+    char LOG_FILE_NAME[1024];
+    sprintf(LOG_FILE_NAME, "Stage%d.manager.out", conf->stage_no);
+    fp = fopen(LOG_FILE_NAME, "a+");
     struct addrinfo hints, *servinfo, *p;
     struct sockaddr_in serv_sin;
     char server_tcp_port[1024], data_to_send[1024],data_to_write[1024];
@@ -188,7 +190,6 @@ int main(int argc, char const *argv[])
         {
             /* This is the client process */
             close(sockfd);
-            printf("%d\n",port );
             client(port,i+1);
             exit(0);
         }
@@ -205,7 +206,7 @@ int main(int argc, char const *argv[])
         }
         send(new_fd,data_to_send, sizeof(data_to_send), 0);
         recv(new_fd, buf, sizeof(buf), 0);
-        fopen(LOG_FILE_NAME, "a+");
+        fp = fopen(LOG_FILE_NAME, "a+");
         sprintf(data_to_write,"Client %d says: %s",j+1, buf);
         fprintf(fp, "Client %d: %d\n",j+1, ntohs(their_addr.sin_port));
         fprintf(fp, "%s\n",data_to_write);
@@ -213,4 +214,4 @@ int main(int argc, char const *argv[])
         printf("Received from client: %s\n",buf);
     }
     return 0;
-}        
+}
