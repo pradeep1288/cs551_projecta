@@ -99,7 +99,7 @@ int main(int argc, char const *argv[])
         return 2;
     }
     addrlen = sizeof(serv_sin);
-    getsockname(sockfd,(struct sockaddr*)&serv_sin,&addrlen);
+    getsockname(sockfd,(struct sockaddr*)&serv_sin,(socklen_t*)&addrlen);
     port=ntohs(serv_sin.sin_port);
 
     //write to log file about the port
