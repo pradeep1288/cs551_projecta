@@ -66,7 +66,7 @@ int main(int argc, char const *argv[])
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = INADDR_ANY;
-    sprintf(data_to_send,"%ld", conf->noonce);
+    sprintf(data_to_send,"%ld\n", conf->noonce);
     if ((rv = getaddrinfo("localhost", server_tcp_port, &hints, &servinfo)) != 0) {
         fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
         return 1;

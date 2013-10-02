@@ -9,6 +9,7 @@ int myclient (int server_tcp_port)
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
+    
     if ((rv = getaddrinfo("localhost", port_no, &hints, &servinfo)) != 0) {
         fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
         return 1;
@@ -37,7 +38,7 @@ int myclient (int server_tcp_port)
 
     //get the dynamic tcp port number
     freeaddrinfo(servinfo); // all done with this structure
-    recv(sockfd, buf, sizeof(buf), 0);
+    recv(sockfd, buf, strlen(buf), 0);
     printf("receiving noonce %s from manager now...\n", buf);
     sprintf(data_to_send,"%s %d",buf, getpid());
     send(sockfd, data_to_send, sizeof(data_to_send), 0);
