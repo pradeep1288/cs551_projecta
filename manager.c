@@ -1,22 +1,11 @@
-#include "manager.h"
-#define MAX_CON 2000
+#include "client.h"
+
 typedef struct config_file_info {
     int stage_no;
     int num_of_nodes;
     long noonce;
 }Conf;
 char buf[1024];
-
-// get sockaddr, IPv4 or IPv6:
-void *get_in_addr(struct sockaddr *sa)
-{
-    if (sa->sa_family == AF_INET) {
-        return &(((struct sockaddr_in*)sa)->sin_addr);
-    }
-    return &(((struct sockaddr_in6*)sa)->sin6_addr);
-}
-
-
 
 Conf* read_config(const char* path)
 {
@@ -56,55 +45,6 @@ Conf* read_config(const char* path)
     return conf;
 }
 
-int client (int server_tcp_port, int client_num)
-{
-    int sockfd, rv;
-    struct addrinfo hints, *servinfo, *p;
-    char s[INET6_ADDRSTRLEN];
-    char buf[1024], port_no[1024], data_to_send[1024];
-    sprintf(port_no,"%d", server_tcp_port);
-    memset(&hints, 0, sizeof hints);
-    hints.ai_family = AF_INET;
-    hints.ai_socktype = SOCK_STREAM;
-    if ((rv = getaddrinfo("localhost", port_no, &hints, &servinfo)) != 0) {
-        fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
-        return 1;
-    }
-    // loop through all the results and connect to the first we can
-    for(p = servinfo; p != NULL; p = p->ai_next) {
-        if ((sockfd = socket(p->ai_family, p->ai_socktype,
-                p->ai_protocol)) == -1) {
-            perror("client: socket");
-            continue;
-        }
-
-        if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
-            close(sockfd);
-            perror("client: connect");
-            continue;
-        }
-
-        break;
-    }
-
-    if (p == NULL) {
-        fprintf(stderr, "client: failed to connect\n");
-        return 2;
-    }
-
-    inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr),
-            s, sizeof s);
-    //get the dynamic tcp port number
-    freeaddrinfo(servinfo); // all done with this structure
-    recv(sockfd, buf, sizeof(buf), 0);
-    printf("receiving noonce %s from manager now...\n", buf);
-    sprintf(data_to_send,"%s %d",buf, getpid());
-    send(sockfd, data_to_send, sizeof(data_to_send), 0);
-    printf("sent %s to manager\n", data_to_send);
-    close(sockfd);
-    exit(0);
-}
-
 int main(int argc, char const *argv[])
 {
     int sockfd, new_fd, rv, yes = 1, port, addrlen, i=0,j=0;  // listen on sock_fd, new connection on new_fd
@@ -118,7 +58,6 @@ int main(int argc, char const *argv[])
     struct sockaddr_in serv_sin;
     char server_tcp_port[1024], data_to_send[1024],data_to_write[1024];
     sprintf(server_tcp_port,"%i",0);
-    char servers_ip[INET6_ADDRSTRLEN];
     pid_t pid;
     struct sockaddr_in their_addr; // connector's address information
     socklen_t sin_size;
@@ -152,9 +91,6 @@ int main(int argc, char const *argv[])
             perror("server: bind");
             continue;
         }
-        //store the servers ip in servers_ip
-        inet_ntop(p->ai_family, get_in_addr(p->ai_addr),
-            servers_ip, sizeof servers_ip);
         break;
     }
 
@@ -190,7 +126,7 @@ int main(int argc, char const *argv[])
         {
             /* This is the client process */
             close(sockfd);
-            client(port,i+1);
+            myclient(port);
             exit(0);
         }
     }

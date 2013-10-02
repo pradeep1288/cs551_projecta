@@ -1,4 +1,5 @@
-
+#ifndef _my_client_h_
+#define _my_client_h_
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -15,3 +16,7 @@
 #include <signal.h>
 #include <time.h>
 
+#define MAX_CON 2000
+
+extern int myclient(int);
+#endif
