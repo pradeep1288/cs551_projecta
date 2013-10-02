@@ -52,7 +52,7 @@ int main(int argc, char const *argv[])
     conf = read_config(argv[1]);
     FILE *fp;
     char LOG_FILE_NAME[1024];
-    sprintf(LOG_FILE_NAME, "Stage%d.manager.out", conf->stage_no);
+    sprintf(LOG_FILE_NAME, "stage%d.manager.out", conf->stage_no);
     fp = fopen(LOG_FILE_NAME, "a+");
     struct addrinfo hints, *servinfo, *p;
     struct sockaddr_in serv_sin;
@@ -60,7 +60,7 @@ int main(int argc, char const *argv[])
     sprintf(server_tcp_port,"%i",0);
     pid_t pid;
     struct sockaddr_in their_addr; // connector's address information
-    socklen_t sin_size;
+    socklen_t sin_size = sizeof(their_addr);
     char buf[1024];
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_INET;

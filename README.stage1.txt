@@ -11,7 +11,7 @@ a. Reused Code
 I have reference the Beej guide for socket programming at http://beej.us/guide/bgnet/output/html/multipage/index.html. Some function names share the similarity as described on the website.
 
 b. Complete: 
-Yes, the stage is complete.
+Yes, the stage is complete. The maximum number of nodes this supports is 1004
 
 c. Portable
 Yes it will work, if the packet format is independent of the CPU
