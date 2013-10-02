@@ -170,6 +170,11 @@ int main(int argc, char const *argv[])
     fclose(fp);
     freeaddrinfo(servinfo); // all done with this structure
 
+    if (listen(sockfd, MAX_CON) == -1) {
+        perror("listen");
+        exit(1);
+    }
+    
     printf("Forking clients now....\n");
     for (i=0;i<conf->num_of_nodes;i++)
     {
@@ -187,11 +192,6 @@ int main(int argc, char const *argv[])
             client(port,i+1);
             exit(0);
         }
-    }
-
-    if (listen(sockfd, MAX_CON) == -1) {
-        perror("listen");
-        exit(1);
     }
 
     for(j=0;j<conf->num_of_nodes;j++)
