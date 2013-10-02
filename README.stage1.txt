@@ -1,3 +1,11 @@
+What did I learn ?
+
+* network system calls usage and implementation
+* writing modular code
+* socket programming principles
+* efficient use of resources
+
+
 a. Reused Code
 
 I have reference the Beej guide for socket programming at http://beej.us/guide/bgnet/output/html/multipage/index.html. Some function names share the similarity as described on the website.
