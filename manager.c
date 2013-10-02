@@ -102,7 +102,7 @@ int client (int server_tcp_port, int client_num)
     send(sockfd, data_to_send, sizeof(data_to_send), 0);
     printf("sent %s to manager\n", data_to_send);
     close(sockfd);
-    return 0;
+    exit(0);
 }
 
 int main(int argc, char const *argv[])
