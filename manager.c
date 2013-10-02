@@ -66,13 +66,13 @@ int main(int argc, char const *argv[])
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = INADDR_ANY;
-    sprintf(data_to_send,"%ld\n", conf->noonce);
+    sprintf(data_to_send,"%ld", conf->noonce);
     if ((rv = getaddrinfo("localhost", server_tcp_port, &hints, &servinfo)) != 0) {
         fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
         return 1;
     }
 
-    //line 76 - 96 has been adapted from http://beej.us/guide/bgnet/examples/server.c
+    //line 76 - 96 has been adapted from http://beej.us/guide/bgnet/examples/server.can
     // loop through all the results and bind to the first we can
     for(p = servinfo; p != NULL; p = p->ai_next) {
         if ((sockfd = socket(p->ai_family, p->ai_socktype,
